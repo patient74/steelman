@@ -1,0 +1,85 @@
+{
+  "precision": 0.3188908145580589,
+  "recall": 0.5575757575757576,
+  "f1": 0.40573318632855565,
+  "auc_pr": 0.5123587446840863,
+  "auc_roc": 0.8427501358670191,
+  "threshold": 0.4839901924133301,
+  "confusion_matrix": [
+    [
+      15777,
+      393
+    ],
+    [
+      146,
+      184
+    ]
+  ],
+  "per_family": {
+    "ACCOUNT_TAKEOVER": {
+      "n": 45,
+      "recall": 1.0,
+      "mean_probability": 0.95937180519104
+    },
+    "MERCHANT_ANOMALY": {
+      "n": 31,
+      "recall": 0.3870967741935484,
+      "mean_probability": 0.3774248957633972
+    },
+    "CARD_TESTING": {
+      "n": 22,
+      "recall": 0.3181818181818182,
+      "mean_probability": 0.3322823643684387
+    },
+    "RELATIONAL_CAMOUFLAGE": {
+      "n": 55,
+      "recall": 0.3090909090909091,
+      "mean_probability": 0.31702643632888794
+    },
+    "UNUSUAL_GEO": {
+      "n": 13,
+      "recall": 0.0,
+      "mean_probability": 0.12631045281887054
+    },
+    "VELOCITY_ABUSE": {
+      "n": 28,
+      "recall": 1.0,
+      "mean_probability": 0.9936590194702148
+    },
+    "BEHAVIORAL_MIMICRY": {
+      "n": 24,
+      "recall": 0.125,
+      "mean_probability": 0.22803016006946564
+    },
+    "DEVICE_COMPROMISE": {
+      "n": 41,
+      "recall": 1.0,
+      "mean_probability": 0.9894284605979919
+    },
+    "TEMPORAL_MIMICRY": {
+      "n": 21,
+      "recall": 0.09523809523809523,
+      "mean_probability": 0.2241538166999817
+    },
+    "AMOUNT_MIMICRY": {
+      "n": 15,
+      "recall": 0.26666666666666666,
+      "mean_probability": 0.27949845790863037
+    },
+    "AGENT_IDENTITY_SPOOFING": {
+      "n": 9,
+      "recall": 0.7777777777777778,
+      "mean_probability": 0.7260957956314087
+    },
+    "AGENT_SCOPE_ABUSE": {
+      "n": 7,
+      "recall": 0.5714285714285714,
+      "mean_probability": 0.5503832101821899
+    },
+    "ADAPTIVE_CARD_TESTING": {
+      "n": 19,
+      "recall": 0.7368421052631579,
+      "mean_probability": 0.6183651089668274
+    }
+  }
+}
