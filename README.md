@@ -2,88 +2,145 @@
 
 **Forging the fraud your defenses haven't seen yet.**
 
-Steelman is a closed-loop red-team / blue-team system for card payment fraud. An
-AI red team invents GenAI-style payment fraud inside a simulated card payment
-ecosystem. An AI blue team has to detect it. The attacks become training data,
-and the detector's blind spots become the next round of attacks.
+ Steelman is an AI-driven fraud defense platform purpose-built for card payment networks, simulating the complete payment ecosystem to proactively identify and defend against emerging GenAI-powered fraud. Calibrated using the IEEE-CIS Fraud Detection and PaySim datasets, it models the full payment network—including customers, accounts, cards, devices, merchants, banks, and autonomous payment agents—and generates realistic transaction data at a 2% fraud rate. 
+ 
+ Its core architecture is a closed-loop AI red team–blue team framework, where an LLM-powered strategist and statistical search agent continuously generate and optimize attacks across thirteen GenAI-native fraud families, while a graph-enhanced detection model learns from these attacks to uncover and close security gaps.
+ 
+  Steelman achieves 100% recall on classical fraud types such as Account Takeover, Velocity Abuse, and Device Compromise, and 74–78% recall on novel attack categories including Agent Identity Spoofing and Adaptive Card Testing. By continuously stress-testing its own defenses and discovering hard-to-detect behavioral mimicry attacks, Steelman provides an explainable, scalable, and future-ready approach to securing card payment ecosystems.
 
-The name comes from argument: *steelmanning* means building
-the strongest possible version of a position before you respond to it. Steelman
-does the same thing to its own defenses — it builds the most convincing fraud
-it can, so whatever passes the test is actually resilient.
+---
 
-## What's here
+## 1. Steelman's Approach
 
-Three pillars, one loop:
+Payment fraud detection is usually built as three separate jobs: mapping the threat landscape, building synthetic data, and training the classifier. Steelman treats these as one continuous loop.
+
+![Figure 1: Steelman's Closed Loop](media/figure1.png)
+*Figure 1. Steelman is one continuous loop. What the detector learns about its own blind spots becomes the next round of attack ideas.*
+
+---
+
+## 2. What's Here (Three Pillars, One Loop)
 
 | Pillar | What it does | Where |
 |---|---|---|
-| **Identify & Generate** | A payment ecosystem simulator (9 entity tables, 13 GenAI-native attack families) | `payment_environment_v24.py` |
-| **Generate** | An AI red team — an LLM strategist plus a statistical search algorithm — that picks attacks and tunes them | `red_strategist.py`, `red_bandit.py` |
-| **Defend** | A detector trained on the ecosystem's own transaction data, retrained on what the red team generates | `blue_model.py` |
+| **Identify & Generate** | A payment ecosystem simulator (9 entity tables, 13 GenAI-native attack families out of 34 mapped vectors) | `payment_environment_v24.py` |
+| **Generate** | An AI red team — an LLM strategist (Gemini 3.5 Flash) plus a Thompson-sampling statistical search algorithm | `red_strategist.py`, `red_bandit.py` |
+| **Defend** | A gradient-boosted classifier detector trained on observable transaction and graph features, retrained on red team output | `blue_model.py` |
 
-The three pieces are wired together by the run scripts, which is where the loop
-actually happens.
+---
 
-## The ecosystem
+## 3. The Simulated Ecosystem
 
-Every transaction Steelman generates sits at the centre of nine linked entity
-tables — customers, accounts, cards, tokens, devices, merchants, issuers,
-acquirers, and autonomous payment agents — calibrated against public statistics
-from the IEEE-CIS Fraud Detection and PaySim datasets, at a realistic 2% fraud
-rate. Calibration profiles for both are in `data/calibration/`.
+Every transaction generated sits at the centre of nine linked entity tables calibrated against public statistics from the IEEE-CIS Fraud Detection and PaySim datasets at a realistic 2% fraud rate.
 
-## The attacks
+![Figure 2: Steelman's Entity Model](media/figure2.png)
+*Figure 2. Steelman's entity model. Nine linked tables give every transaction the same relational structure a real card network's data warehouse would have.*
 
-Thirteen attack families, each a small space of tunable parameters rather than
-a fixed pattern — behavioural, temporal, and amount mimicry; adaptive card
-testing; relational camouflage; synthetic identity; account takeover; device
-compromise; velocity abuse; unusual geography; merchant anomaly; and, newest,
-agent identity spoofing and agent scope abuse — attacks on AI assistants
-transacting on a customer's behalf.
+| Entity Table | What it represents | Key fields |
+|---|---|---|
+| **Customer** | The account holder | persona, home country/city, account age |
+| **Account** | A customer's banking relationship | owns one or more cards |
+| **Card & token** | The payment instrument | issuer link, tokenised identifier |
+| **Device** | What the transaction was made from | trust flag, OS risk score |
+| **Merchant** | Who was paid | merchant category code (MCC), risk tier, geography |
+| **Issuer** | The card-issuing bank | issues cards to customers |
+| **Acquirer** | The merchant's bank | settles transactions for merchants |
+| **Payment agent** | An AI assistant transacting on a customer's behalf | declared spend limit, allowed categories, trust level |
+| **Transaction** | The event itself | amount, channel, category, authentication result, risk scores |
 
-## The red team
+### Autonomous Payment Agents
+Steelman models both legitimate payment agents transacting inside a declared scope and agents whose behaviour drifts outside it. This reflects early industry guidance on agent-initiated payments and tokenisation.
 
-Each generation, a large language model (gemini 3.5 flash here) reads the recent history of
-attacks — which family, which parameters, how close each one came to evading
-detection — and decides what to try next, with its reasoning logged in plain
-language. A Thompson-sampling bandit fills in the exact numeric parameters
-within whichever family the strategist picks.
+---
 
-## The detector
+## 4. Thirteen GenAI-Powered Attack Families
 
-A gradient-boosted classifier trained on observable transaction fields only,
-with graph features (shared-device customer counts, network structure) built
-specifically to catch attacks that don't look anomalous in any single
-transaction. On held-out data:
+Steelman simulates 13 parameterised attack families across 4 ecosystem layers selected from 34 researched payment fraud vectors.
+
+![Figure 3: Ecosystem Layers & Attack Families](media/figure3.png)
+*Figure 3. Steelman's thirteen attack families, grouped by the layer of the ecosystem they target.*
+
+* **Authorization-time behaviour:** Behavioural mimicry, temporal mimicry, amount-distribution mimicry, adaptive card testing, classic card testing, velocity abuse, unusual geography.
+* **Network structure:** Relational camouflage, merchant anomaly detection, device compromise clusters.
+* **Identity & account:** Synthetic identity, account takeover.
+* **Autonomous agents:** Agent identity spoofing, agent scope abuse.
+
+### Behavioral Mimicry Example
+Below is a real transaction pair generated by Steelman showing how the red agent alters a legitimate transaction to blend into victim history:
+
+| Field | Legitimate Transaction | Steelman-Generated Attack |
+|---|---|---|
+| **amount** | ₹335.09 | ₹103.07 |
+| **channel** | E_COMMERCE | E_COMMERCE |
+| **merchant category** | RETAIL | RETAIL |
+| **merchant city** | Mumbai | Chennai |
+| **authentication result** | SUCCESS | SUCCESS |
+
+---
+
+## 5. The AI Red Team
+
+Steelman's red team uses a split architecture: an LLM strategist combined with a statistical bandit.
+
+![Figure 4: Red Team Closed Loop Cycle](media/figure4.png)
+*Figure 4. One cycle of Steelman's closed loop.*
+
+1. **Strategist (Gemini 3.5 Flash):** Analyzes recent attack history, evasion rates, and parameter tuning to select the next attack family while logging plain-language reasoning.
+2. **Bandit (Thompson Sampling):** Tunes continuous numeric parameters within the chosen attack family using evasion signal proximity.
+
+---
+
+## 6. The Detector & Performance
+
+The detector is a gradient-boosted classifier using observable transaction signals and graph-aware features (e.g., shared-device customer counts, network component size).
+
+### Overall Benchmark (16,500 unseen held-out transactions, 2% fraud rate)
 
 | Metric | Value |
 |---|---|
-| Precision | 0.32 |
-| Recall | 0.56 |
-| F1 | 0.41 |
-| AUC-PR | 0.51 |
+| **Precision** | 0.32 |
+| **Recall** | 0.56 |
+| **F1 Score** | 0.41 |
+| **AUC-PR** | 0.51 |
 
-Classical fraud (account takeover, device compromise, velocity abuse) is
-caught at 100% recall. The hardest GenAI-native mimicry attacks are caught
-far less often — that gap is what the closed loop keeps working on.
+![Figure 5: Detector Scorecard](media/figure5.png)
+*Figure 5. Steelman's detector evaluation across all 13 attack families.*
 
-## Running it
+### Detection Recall by Attack Family
+
+![Figure 6: Detection Recall Breakdown](media/figure6.png)
+*Figure 6. Detection recall by attack family.*
+
+* **Classical Fraud (100% Recall):** Account Takeover, Velocity Abuse, Device Compromise.
+* **Emerging Agentic & Adaptive (57%–78% Recall):** Agent Identity Spoofing (78%), Adaptive Card Testing (74%), Agent Scope Abuse (57%).
+* **Hard Mimicry Vectors (10%–31% Recall):** Relational Camouflage (31%), Amount Mimicry (27%), Behavioural Mimicry (12%), Temporal Mimicry (10%), Unusual Geography (0%).
+
+---
+
+## 7. Loop Convergence
+
+When run across 30 generations and 594 campaigns, Thompson-sampling search parameters converge toward evasion-optimized parameters automatically.
+
+![Figure 7: Red Agent Parameter Convergence](media/figure7.png)
+*Figure 7. Red agent parameter search convergence under Relational Camouflage.*
+
+---
+
+## 8. Running Steelman
 
 ```bash
-pip install -r requirements.txt   # or see below
+pip install -r requirements.txt
 ```
 
-**1. Generate the base dataset and train the static detector:**
-
+### 1. Generate the base dataset and train the baseline detector:
 ```bash
 python payment_environment_v24.py --customers 1500 --merchants 150 --days 20 \
     --output data/blue_dataset_v2
 python run_baseline.py
 ```
 
-**2. Run the closed loop** (needs a free Gemini API key — see
-[aistudio.google.com/apikey](https://aistudio.google.com/apikey)):
+### 2. Run the closed loop:
+Requires a Gemini API key (see [aistudio.google.com/apikey](https://aistudio.google.com/apikey)).
 
 ```bash
 python run_closed_loop.py \
@@ -95,46 +152,42 @@ python run_closed_loop.py \
     --retrain-every 5
 ```
 
-This writes `generation_log.json`, `comparison_log.json`,
-`strategist_reasoning_log.jsonl`, and `final_debrief.txt` to `output_v4/` —
-a full per-generation record of what the red team tried, what the detector
-caught, and why.
+Logs (`generation_log.json`, `comparison_log.json`, `strategist_reasoning_log.jsonl`, `final_debrief.txt`) are written to `output_v4/`.
 
-`run_adversarial_loop_llm.py` runs the same red team against a *frozen*
-detector (no retraining) — useful for isolating how evasive the red team gets
-on its own, before the detector starts adapting.
+### Alternative Execution Modes
+* **Frozen Detector Loop:** `run_adversarial_loop_llm.py` runs the red team against an un-retrained detector.
+* **Standalone Bandit Search:** `test_bandit_standalone.py` evaluates parameter search mechanics without LLM calls.
 
-`test_bandit_standalone.py` runs the search algorithm on its own, no LLM
-required — a fast way to sanity-check the loop mechanics.
+---
 
-### Dependencies
+## 9. Dependencies & Repository Layout
 
-```
+```text
 pandas, numpy, xgboost, scikit-learn, networkx, shap, openai
 ```
 
-## Repository layout
-
-```
-payment_environment_v24.py     the simulator: entities, transactions, attacks
-blue_model.py                   the detector: features, training, scoring
-red_bandit.py                   parameter search (Thompson sampling)
-red_strategist.py               LLM strategist + reasoning log
-run_baseline.py                 trains the static detector, no red team
-run_closed_loop.py               the full loop: red team + retraining detector
-run_adversarial_loop_llm.py      red team against a frozen detector
-test_bandit_standalone.py        search algorithm only, no LLM
+```text
+payment_environment_v24.py    Simulator: entities, transactions, 13 attack families
+blue_model.py                 Detector: graph feature extraction, training, scoring
+red_bandit.py                 Thompson-sampling parameter search engine
+red_strategist.py             LLM strategist & plain-language reasoning logger
+run_baseline.py               Trains static baseline detector
+run_closed_loop.py            Full red/blue adaptive closed loop
+run_adversarial_loop_llm.py   Adversarial loop against a frozen detector
+test_bandit_standalone.py     Standalone bandit search test script
 
 data/
-  blue_dataset_v2/                generated transactions
-  calibration/                    IEEE-CIS / PaySim calibration profiles
+  blue_dataset_v2/            Generated base transactions
+  calibration/                IEEE-CIS / PaySim calibration profiles
 
-output_v2/blue_model_baseline/   the trained static detector
-output_v3/                        frozen-detector run: logs, reasoning, debrief
-output_v4/                        full closed-loop run: logs, reasoning, debrief
+output_v2/blue_model_baseline/ Baseline static detector artifacts
+output_v3/                    Frozen detector experiment logs & debrief
+output_v4/                    Full closed-loop experiment logs & debrief
 ```
 
-## What's next
+---
+
+## 10. What's next
 
 The closed loop's biggest open question: retraining the detector on the red
 team's *successful* attacks alone gives only a small, inconsistent
